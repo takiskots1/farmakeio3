@@ -1,0 +1,1 @@
+{% extends 'base.html' %}{% block content %}<h1>Μηνύματα: {{ client.full_name }}</h1><form method="post" class="panel">{{ form.hidden_tag() }}<label>{{ form.body.label }}{{ form.body(rows=4) }}</label>{{ form.submit(class_='btn') }}</form>{% for x in items %}<div class="panel"><small>{{ x.created_at }}</small><p>{{ x.body }}</p></div>{% endfor %}{% endblock %}
