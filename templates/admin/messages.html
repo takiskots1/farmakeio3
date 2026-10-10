@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Επικοινωνία με {{ client.full_name }} · CHRYSPHARMACY{% endblock %}
+{% block content %}
+<div class="page-heading"><div><div class="eyebrow">ΕΠΙΚΟΙΝΩΝΙΑ / ΚΑΡΤΕΛΑ ΠΕΛΑΤΗ</div><h1>Μηνύματα · {{ client.full_name }}</h1><p>Επίλεξε τα κανάλια αποστολής και παρακολούθησε την επικοινωνία σε ένα σημείο.</p></div><div class="heading-actions"><a class="btn btn-outline-secondary" href="{{ url_for('admin_inbox') }}">↙ Εισερχόμενα</a><a class="btn btn-outline-secondary" href="{{ url_for('admin_messages') }}">← Κέντρο μηνυμάτων</a></div></div>
+<div class="action-card mb-4"><div><strong>Πρόσβαση portal: {{ 'Ενεργή · ' ~ account.username if account else 'Δεν έχει δημιουργηθεί' }}</strong><p>{% if account %}Ο πελάτης μπορεί να διαβάσει μηνύματα και να απαντήσει στο /client.{% else %}Για να δει μηνύματα μέσα στην εφαρμογή, χρειάζεται πρώτα λογαριασμό.{% endif %}</p></div><a class="btn btn-teal" href="{{ url_for('edit_client',client_id=client.id) }}">Στοιχεία &amp; σύνδεση</a></div>
+<div class="portal-columns">
+<section class="surface"><div class="surface-head"><div><div class="eyebrow">ΝΕΟ ΜΗΝΥΜΑ</div><h2>Σύνταξη &amp; αποστολή</h2><p>Επίλεξε ένα ή περισσότερα κανάλια.</p></div></div><div class="surface-body">
+<form method="post" novalidate id="message-form" onsubmit="return confirm('Επιβεβαίωση: τα επιλεγμένα SMS / email / push θα αποσταλούν πραγματικά και μπορεί να έχουν χρέωση. Συνέχεια;')">
+{{ form.hidden_tag() }}
+<div class="mb-3">{{ form.body.label(class_='form-label') }}{{ form.body(class_='form-control',rows=6,placeholder='Σύντομο και σαφές μήνυμα χωρίς ΑΜΚΑ ή ευαίσθητα δεδομένα...') }}{% for e in form.body.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}</div>
+<div class="form-label">Τρόποι επικοινωνίας</div>
+<div class="channel-grid">
+<label class="channel-option"><span class="channel-icon">▣</span><span class="channel-copy"><strong>Portal πελάτη</strong><small>Αποθηκεύεται στην προσωπική καρτέλα</small></span>{{ form.portal(class_='form-check-input') }}</label>
+<label class="channel-option"><span class="channel-icon sms">✉</span><span class="channel-copy"><strong>SMS.to</strong><small>SMS στο κινητό · ενδέχεται να χρεωθεί</small></span>{{ form.sms(class_='form-check-input',disabled=(blockers.sms|length > 0)) }}</label>
+<label class="channel-option"><span class="channel-icon mail">@</span><span class="channel-copy"><strong>Email</strong><small>Αποστολή μέσω του ρυθμισμένου SMTP</small></span>{{ form.email(class_='form-check-input',disabled=(blockers.email|length > 0)) }}</label>
+<label class="channel-option"><span class="channel-icon push">◉</span><span class="channel-copy"><strong>Push notification</strong><small>{{ subscriptions }} εγγεγραμμένη/ες συσκευή/ές</small></span>{{ form.push(class_='form-check-input',disabled=(blockers.push|length > 0)) }}</label>
+</div>
+{% for ch,label in [('sms','SMS'),('email','EMAIL'),('push','PUSH')] %}{% if blockers[ch] %}<div class="channel-warning"><strong>{{ label }} μη διαθέσιμο:</strong> {{ blockers[ch]|join(' · ') }}</div>{% endif %}{% endfor %}
+<button class="btn btn-brand mt-3 w-100" type="submit">✉ Καταχώριση και αποστολή →</button>
+</form>
+<p class="hint mt-3 mb-0">Αποστολές εκτός portal: αποθηκεύεται η προσπάθεια και η απάντηση του παρόχου. Η αποδοχή από SMS.to ή push server δεν εγγυάται παράδοση. Για διαφημιστικά μηνύματα απαιτούνται κατάλληλες συναινέσεις.</p>
+</div></section>
+<section class="surface"><div class="surface-head"><div><div class="eyebrow">ΙΣΤΟΡΙΚΟ ΣΥΝΟΜΙΛΙΑΣ</div><h2>Επικοινωνία <span class="count-pill">{{ items|length }}</span></h2></div></div><div class="surface-body chat-history">
+{% for x in items %}<article class="message-bubble {{ 'incoming-bubble' if x.direction=='client_to_admin' else 'outgoing-bubble' }}">
+ <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap"><strong class="message-origin">{{ '↙ Από τον πελάτη' if x.direction=='client_to_admin' else '↗ Από το φαρμακείο' }}</strong><span class="message-date">{{ x.created_at.strftime('%d/%m/%Y · %H:%M') }}</span></div>
+ <p>{{ x.body }}</p>
+ {% if x.direction == 'admin_to_client' %}<div class="delivery-badges">{% for entry in x.deliveries %}<span class="delivery-badge {{ entry.status }}">{{ entry.channel|upper }} · {{ {'queued':'σε ουρά','sent':'στάλθηκε','saved':'στην καρτέλα','failed':'αποτυχία','processing':'σε εξέλιξη'}.get(entry.status,entry.status) }}</span>{% endfor %}</div>{% endif %}
+</article>{% else %}<div class="empty-state"><span>✉</span><strong>Δεν έχουν καταχωριστεί μηνύματα.</strong><p>Το πρώτο μήνυμα θα εμφανιστεί εδώ.</p></div>{% endfor %}
+</div></section></div>
+{% endblock %}
